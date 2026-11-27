@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Entrar — MicroBlog</title>
+  <style>
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body { margin: 0; background: #020617; color: #f8fafc; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .card { width: 100%; max-width: 420px; background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+    .logo { width: 48px; height: 48px; border-radius: 50%; background: rgba(14,165,233,0.15); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; margin: 0 auto 12px; }
+    h1 { text-align: center; font-size: 22px; margin: 0 0 6px; }
+    .subtitle { text-align: center; color: #94a3b8; font-size: 14px; margin: 0 0 24px; }
+    .tabs { display: flex; background: #1e293b; border-radius: 12px; padding: 4px; margin-bottom: 20px; }
+    .tab-btn { flex: 1; padding: 8px; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; background: transparent; color: #cbd5e1; transition: 0.2s; }
+    .tab-btn.active { background: #0ea5e9; color: #fff; }
+    .hidden { display: none !important; }
+    .error-box { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5; padding: 10px 12px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; }
+    .field { margin-bottom: 14px; }
+    label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 5px; }
+    input { width: 100%; padding: 10px 14px; border-radius: 10px; background: #1e293b; border: 1px solid #334155; color: #fff; font-size: 14px; outline: none; }
+    input:focus { border-color: #0ea5e9; }
+    .submit-btn { width: 100%; padding: 12px; border: none; border-radius: 10px; background: #0ea5e9; color: #fff; font-weight: 600; font-size: 15px; cursor: pointer; margin-top: 6px; transition: 0.2s; }
+    .submit-btn:hover { background: #38bdf8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">𝕏</div>
+    <h1>Bem-vindo ao MicroBlog</h1>
+    <p class="subtitle">Conecte-se e acompanhe quem você segue</p>
+
+    <div class="tabs">
+      <button id="tab-login" type="button" onclick="switchTab('login')" class="tab-btn active">Entrar</button>
+      <button id="tab-register" type="button" onclick="switchTab('register')" class="tab-btn">Criar Conta</button>
+    </div>
+
+    <div id="error-box" class="error-box hidden"></div>
+
+    <form id="form-login" onsubmit="handleLogin(event)">
+      <div class="field">
+        <label>Usuário</label>
+        <input id="login-username" type="text" required placeholder="seu_usuario" />
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input id="login-password" type="password" required placeholder="••••••••" />
+      </div>
+      <button type="submit" class="submit-btn">Entrar</button>
+    </form>
+
+    <form id="form-register" onsubmit="handleRegister(event)" class="hidden">
+      <div class="field">
+        <label>Nome de exibição</label>
+        <input id="reg-name" type="text" required placeholder="Ex: Christian Marlon" />
+      </div>
+      <div class="field">
+        <label>Nome de usuário (@)</label>
+        <input id="reg-username" type="text" required placeholder="christian_dev" />
+      </div>
+      <div class="field">
+        <label>E-mail</label>
+        <input id="reg-email" type="email" placeholder="voce@email.com" />
+      </div>
+      <div class="field">
+        <label>Senha (mínimo 4 caracteres)</label>
+        <input id="reg-password" type="password" minlength="4" required placeholder="••••••••" />
+      </div>
+      <button type="submit" class="submit-btn">Cadastrar e Entrar</button>
+    </form>
+  </div>
+
+  <script>
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== "") {
+        for (const cookie of document.cookie.split(";")) {
+          const c = cookie.trim();
+          if (c.startsWith(name + "=")) {
+            cookieValue = decodeURIComponent(c.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    function switchTab(tab) {
+      const isLogin = tab === "login";
+      document.getElementById("form-login").classList.toggle("hidden", !isLogin);
+      document.getElementById("form-register").classList.toggle("hidden", isLogin);
+      document.getElementById("tab-login").classList.toggle("active", isLogin);
+      document.getElementById("tab-register").classList.toggle("active", !isLogin);
+      document.getElementById("error-box").classList.add("hidden");
+    }
+
+    function showError(msg) {
+      const box = document.getElementById("error-box");
+      box.textContent = msg;
+      box.classList.remove("hidden");
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const res = await fetch("/api/login/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") },
+        body: JSON.stringify({
+          username: document.getElementById("login-username").value,
+          password: document.getElementById("login-password").value,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) window.location.href = "/";
+      else showError(data.detail || "Erro ao fazer login.");
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      const res = await fetch("/api/register/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") },
+        body: JSON.stringify({
+          first_name: document.getElementById("reg-name").value,
+          username: document.getElementById("reg-username").value,
+          email: document.getElementById("reg-email").value,
+          password: document.getElementById("reg-password").value,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) window.location.href = "/";
+      else showError(Object.values(data).flat().join(" ") || "Erro ao criar conta.");
+    }
+  </script>
+</body>
+</html>
